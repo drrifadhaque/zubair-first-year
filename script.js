@@ -14,103 +14,22 @@ function createPetals() {
     }
 }
 
-// ===== YOUTUBE PLAYERS =====
-let ytPlayers = [];
-let apiReady = false;
-
-// Called by YouTube IFrame API when ready
-function onYouTubeIframeAPIReady() {
-    apiReady = true;
-    document.querySelectorAll('.music-player').forEach((el, index) => {
-        const iframe = el.querySelector('iframe');
-        if (!iframe) return;
-
-        const player = new YT.Player(iframe, {
-            events: {
-                'onReady': (e) => {
-                    e.target.setVolume(60);
-                    ytPlayers[index] = { player: e.target, element: el, ready: true };
-                },
-                'onStateChange': (e) => {
-                    if (e.data === YT.PlayerState.PLAYING) {
-                        el.classList.add('playing');
-                    } else {
-                        el.classList.remove('playing');
-                    }
-                }
-            }
-        });
-    });
-
-    // Start scroll observer after players are created
-    setTimeout(initMusicScrollObserver, 1500);
-}
-
-// ===== SCROLL-BASED MUSIC CONTROL =====
-function initMusicScrollObserver() {
-    if (!ytPlayers.length) {
-        setTimeout(initMusicScrollObserver, 500);
-        return;
-    }
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            const card = entry.target;
-            const musicPlayer = card.querySelector('.music-player');
-            if (!musicPlayer) return;
-
-            const index = Array.from(document.querySelectorAll('.month-card')).indexOf(card);
-            const data = ytPlayers[index];
-            if (!data || !data.ready) return;
-
-            if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
-                // Fade in and play
-                musicPlayer.classList.add('active');
-                try {
-                    let vol = 0;
-                    data.player.setVolume(0);
-                    data.player.playVideo();
-                    const fadeIn = setInterval(() => {
-                        vol = Math.min(vol + 8, 60);
-                        try { data.player.setVolume(vol); } catch(e) {}
-                        if (vol >= 60) clearInterval(fadeIn);
-                    }, 100);
-                } catch(e) {}
-            } else if (!entry.isIntersecting) {
-                // Fade out and pause
-                try {
-                    let vol = 60;
-                    const fadeOut = setInterval(() => {
-                        vol = Math.max(vol - 12, 0);
-                        try { data.player.setVolume(vol); } catch(e) {}
-                        if (vol <= 0) {
-                            clearInterval(fadeOut);
-                            try { data.player.pauseVideo(); } catch(e) {}
-                            musicPlayer.classList.remove('active');
-                        }
-                    }, 60);
-                } catch(e) {}
-            }
-        });
-    }, {
-        threshold: [0, 0.3, 0.5, 0.7, 1],
-        rootMargin: '-5% 0px -5% 0px'
-    });
-
-    document.querySelectorAll('.month-card').forEach(card => {
-        observer.observe(card);
-    });
-}
-
 // ===== SCROLL ANIMATIONS =====
 function initScrollAnimations() {
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.classList.add('visible');
+                // Also activate music player when card is visible
+                const music = entry.target.querySelector('.music-player');
+                if (music) music.classList.add('active');
+            } else {
+                // Deactivate when out of view
+                const music = entry.target.querySelector('.music-player');
+                if (music) music.classList.remove('active');
             }
         });
-    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
 
     document.querySelectorAll('.month-card').forEach(card => {
         observer.observe(card);
