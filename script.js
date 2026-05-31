@@ -14,46 +14,42 @@ function createPetals() {
     }
 }
 
-// ===== YOUTUBE IFRAME API =====
-let players = [];
-let playerReady = {};
+// ===== YOUTUBE PLAYERS =====
+let ytPlayers = [];
+let apiReady = false;
 
+// Called by YouTube IFrame API when ready
 function onYouTubeIframeAPIReady() {
+    apiReady = true;
     document.querySelectorAll('.music-player').forEach((el, index) => {
-        const videoId = el.dataset.video;
         const iframe = el.querySelector('iframe');
-
-        // Set src from data-src (lazy load)
-        if (iframe.dataset.src) {
-            iframe.src = iframe.dataset.src;
-        }
+        if (!iframe) return;
 
         const player = new YT.Player(iframe, {
             events: {
                 'onReady': (e) => {
-                    playerReady[index] = true;
-                    e.target.setVolume(70);
+                    e.target.setVolume(60);
+                    ytPlayers[index] = { player: e.target, element: el, ready: true };
                 },
                 'onStateChange': (e) => {
-                    // Update active state
                     if (e.data === YT.PlayerState.PLAYING) {
-                        el.classList.add('active');
-                    } else if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) {
-                        // Don't remove active immediately — let fade handle it
+                        el.classList.add('playing');
+                    } else {
+                        el.classList.remove('playing');
                     }
                 }
             }
         });
-
-        players.push({ player, element: el, index });
     });
+
+    // Start scroll observer after players are created
+    setTimeout(initMusicScrollObserver, 1500);
 }
 
-// ===== SCROLL-BASED PLAY/PAUSE =====
-function initScrollMusic() {
-    if (!players.length) {
-        // Retry if players not ready yet
-        setTimeout(initScrollMusic, 500);
+// ===== SCROLL-BASED MUSIC CONTROL =====
+function initMusicScrollObserver() {
+    if (!ytPlayers.length) {
+        setTimeout(initMusicScrollObserver, 500);
         return;
     }
 
@@ -63,45 +59,42 @@ function initScrollMusic() {
             const musicPlayer = card.querySelector('.music-player');
             if (!musicPlayer) return;
 
-            const playerData = players.find(p => p.element === musicPlayer);
-            if (!playerData || !playerReady[playerData.index]) return;
+            const index = Array.from(document.querySelectorAll('.month-card')).indexOf(card);
+            const data = ytPlayers[index];
+            if (!data || !data.ready) return;
 
-            if (entry.isIntersecting && entry.intersectionRatio > 0.4) {
-                // Card is visible — fade in and play
+            if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+                // Fade in and play
                 musicPlayer.classList.add('active');
-
-                // Fade in effect
                 try {
-                    playerData.player.playVideo();
-                    // Gradual volume fade in
                     let vol = 0;
+                    data.player.setVolume(0);
+                    data.player.playVideo();
                     const fadeIn = setInterval(() => {
-                        vol = Math.min(vol + 10, 70);
-                        try { playerData.player.setVolume(vol); } catch(e) {}
-                        if (vol >= 70) clearInterval(fadeIn);
+                        vol = Math.min(vol + 8, 60);
+                        try { data.player.setVolume(vol); } catch(e) {}
+                        if (vol >= 60) clearInterval(fadeIn);
                     }, 100);
                 } catch(e) {}
-
-            } else {
-                // Card is out of view — fade out and pause
-                // Gradual volume fade out
+            } else if (!entry.isIntersecting) {
+                // Fade out and pause
                 try {
-                    let vol = 70;
+                    let vol = 60;
                     const fadeOut = setInterval(() => {
-                        vol = Math.max(vol - 15, 0);
-                        try { playerData.player.setVolume(vol); } catch(e) {}
+                        vol = Math.max(vol - 12, 0);
+                        try { data.player.setVolume(vol); } catch(e) {}
                         if (vol <= 0) {
                             clearInterval(fadeOut);
-                            try { playerData.player.pauseVideo(); } catch(e) {}
+                            try { data.player.pauseVideo(); } catch(e) {}
                             musicPlayer.classList.remove('active');
                         }
-                    }, 80);
+                    }, 60);
                 } catch(e) {}
             }
         });
     }, {
-        threshold: [0, 0.2, 0.4, 0.6, 0.8, 1],
-        rootMargin: '-10% 0px -10% 0px'
+        threshold: [0, 0.3, 0.5, 0.7, 1],
+        rootMargin: '-5% 0px -5% 0px'
     });
 
     document.querySelectorAll('.month-card').forEach(card => {
@@ -117,7 +110,7 @@ function initScrollAnimations() {
                 entry.target.classList.add('visible');
             }
         });
-    }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
 
     document.querySelectorAll('.month-card').forEach(card => {
         observer.observe(card);
@@ -149,7 +142,7 @@ function initScrollProgress() {
     });
 }
 
-// ===== CARD TILT EFFECT =====
+// ===== CARD TILT =====
 function initTilt() {
     document.querySelectorAll('.month-card').forEach(card => {
         card.addEventListener('mousemove', (e) => {
@@ -171,15 +164,13 @@ function initMonthCounter() {
             if (entry.isIntersecting && !entry.target.dataset.counted) {
                 entry.target.dataset.counted = 'true';
                 const target = parseInt(entry.target.textContent);
-                let current = 0;
                 const duration = 800;
                 const start = performance.now();
                 function update(now) {
                     const elapsed = now - start;
                     const progress = Math.min(elapsed / duration, 1);
                     const eased = 1 - Math.pow(1 - progress, 3);
-                    current = Math.round(eased * target);
-                    entry.target.textContent = String(current).padStart(2, '0');
+                    entry.target.textContent = String(Math.round(eased * target)).padStart(2, '0');
                     if (progress < 1) requestAnimationFrame(update);
                 }
                 requestAnimationFrame(update);
@@ -219,7 +210,4 @@ document.addEventListener('DOMContentLoaded', () => {
     initTilt();
     initMonthCounter();
     initStaggerDetails();
-
-    // Start music observer after YouTube API loads
-    setTimeout(initScrollMusic, 2000);
 });
