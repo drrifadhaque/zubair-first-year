@@ -36,15 +36,12 @@ function onYouTubeIframeAPIReady() {
                         element: musicPlayer,
                         card: card,
                         ready: true,
-                        playing: false,
-                        fading: false
+                        playing: false
                     };
-                    // Mute initially (required for autoplay)
-                    e.target.mute();
+                    // Set initial volume to 0 for fade in
                     e.target.setVolume(0);
                 },
                 'onStateChange': (e) => {
-                    if (!ytPlayers[index]) return;
                     if (e.data === YT.PlayerState.PLAYING) {
                         musicPlayer.classList.add('playing');
                     } else if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) {
@@ -55,13 +52,13 @@ function onYouTubeIframeAPIReady() {
         });
     });
 
-    // Start scroll observer after players are ready
-    setTimeout(initMusicObserver, 2500);
+    // Start scroll observer
+    setTimeout(initMusicObserver, 2000);
 }
 
 // ===== SCROLL-BASED AUTOPLAY WITH FADE =====
 function initMusicObserver() {
-    if (!ytPlayers.length || !ytPlayers.some(p => p && p.ready)) {
+    if (!ytPlayers.length) {
         setTimeout(initMusicObserver, 500);
         return;
     }
@@ -71,63 +68,59 @@ function initMusicObserver() {
             const card = entry.target;
             const index = Array.from(document.querySelectorAll('.month-card')).indexOf(card);
             const data = ytPlayers[index];
-            if (!data || !data.ready || data.fading) return;
+            if (!data || !data.ready) return;
 
-            if (entry.isIntersecting && entry.intersectionRatio > 0.35) {
-                // Card is visible — play with fade in
+            if (entry.isIntersecting && entry.intersectionRatio > 0.4) {
+                // Card is visible — fade in and play
+                data.element.classList.add('active');
+
                 if (!data.playing) {
                     data.playing = true;
-                    data.fading = true;
-                    data.element.classList.add('active');
-
                     try {
+                        // Mute first (browsers allow muted autoplay)
                         data.player.mute();
                         data.player.playVideo();
 
-                        // Unmute after video starts, then fade volume in
+                        // Unmute after a short delay with volume fade
                         setTimeout(() => {
                             try {
                                 data.player.unMute();
                                 let vol = 0;
                                 data.player.setVolume(0);
                                 const fadeIn = setInterval(() => {
-                                    vol = Math.min(vol + 4, 65);
+                                    vol = Math.min(vol + 5, 70);
                                     try { data.player.setVolume(vol); } catch(e) {}
-                                    if (vol >= 65) {
-                                        clearInterval(fadeIn);
-                                        data.fading = false;
-                                    }
-                                }, 70);
-                            } catch(e) { data.fading = false; }
-                        }, 500);
-                    } catch(e) { data.fading = false; }
+                                    if (vol >= 70) clearInterval(fadeIn);
+                                }, 80);
+                            } catch(e) {}
+                        }, 300);
+                    } catch(e) {}
                 }
             } else {
                 // Card out of view — fade out and pause
+                data.element.classList.remove('active');
+
                 if (data.playing) {
                     data.playing = false;
-                    data.fading = true;
-                    data.element.classList.remove('active');
-
                     try {
-                        let vol = 65;
+                        // Volume fade out
+                        let vol = 70;
                         try { vol = data.player.getVolume(); } catch(e) {}
                         const fadeOut = setInterval(() => {
-                            vol = Math.max(vol - 8, 0);
+                            vol = Math.max(vol - 10, 0);
                             try { data.player.setVolume(vol); } catch(e) {}
                             if (vol <= 0) {
                                 clearInterval(fadeOut);
                                 try { data.player.pauseVideo(); } catch(e) {}
-                                data.fading = false;
                             }
-                        }, 50);
-                    } catch(e) { data.fading = false; }
+                        }, 60);
+                    } catch(e) {}
                 }
             }
         });
     }, {
-        threshold: [0, 0.2, 0.35, 0.5, 0.7, 1],
-        rootMargin: '-5% 0px -5% 0px'
+        threshold: [0, 0.2, 0.4, 0.6, 0.8, 1],
+        rootMargin: '-10% 0px -10% 0px'
     });
 
     document.querySelectorAll('.month-card').forEach(card => {
