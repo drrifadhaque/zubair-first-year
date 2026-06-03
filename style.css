@@ -757,130 +757,90 @@ body {
     }
 }
 
+
 /* ═══════════════════════════════════════
-   ZUBAIR MEDIA GALLERIES
-   Cherry blossom themed, fade-in animated
+   ZUBAIR PHOTO COLLAGE
+   Masonry grid with cherry blossom theme
    ═══════════════════════════════════════ */
 
-.zubair-media-gallery {
-    margin: 28px 0 8px;
-    padding: 0 4px;
+.zubair-collage {
+    margin: 24px 0 12px;
+    opacity: 0;
+    animation: zubairFadeIn 0.8s ease 0.3s forwards;
 }
 
-.zubair-gallery-title {
+.collage-title {
     font-size: 0.82rem;
     font-weight: 600;
     color: var(--text-light);
-    margin-bottom: 12px;
+    margin-bottom: 14px;
     letter-spacing: 0.5px;
-    opacity: 0;
-    animation: zubairFadeUp 0.6s ease forwards;
 }
 
-.zubair-photos,
-.zubair-videos {
-    margin-bottom: 18px;
+.collage-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: 160px;
+    gap: 10px;
 }
 
-/* ─── Scrollable Track ─── */
-.zubair-gallery-track {
-    display: flex;
-    gap: 14px;
-    overflow-x: auto;
-    padding-bottom: 10px;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-}
-
-.zubair-gallery-track::-webkit-scrollbar { height: 5px; }
-.zubair-gallery-track::-webkit-scrollbar-track { background: rgba(0,0,0,0.04); border-radius: 5px; }
-.zubair-gallery-track::-webkit-scrollbar-thumb { background: var(--pink); border-radius: 5px; }
-
-/* ─── Photo Cards ─── */
-.zubair-photo-card {
-    flex: 0 0 auto;
-    width: 170px;
-    height: 170px;
-    border-radius: 14px;
+.collage-item {
+    border-radius: 12px;
     overflow: hidden;
-    scroll-snap-align: start;
     cursor: pointer;
     position: relative;
-    box-shadow: 0 3px 12px rgba(0,0,0,0.08);
-    transition: transform 0.35s cubic-bezier(.25,.46,.45,.94), box-shadow 0.35s ease;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    transition: transform 0.4s cubic-bezier(.25,.46,.45,.94), box-shadow 0.4s ease, z-index 0s;
     opacity: 0;
-    animation: zubairFadeUp 0.5s ease forwards;
-    animation-delay: calc(var(--i, 0) * 0.08s);
+    animation: zubairFadeIn 0.6s ease forwards;
+    animation-delay: calc(var(--i, 0) * 0.06s + 0.2s);
 }
 
-.zubair-photo-card::after {
+.collage-item::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(255,183,197,0.15), transparent 60%);
-    opacity: 0;
-    transition: opacity 0.3s;
+    background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.03) 100%);
+    z-index: 1;
     pointer-events: none;
 }
 
-.zubair-photo-card:hover {
-    transform: translateY(-6px) scale(1.04);
-    box-shadow: 0 12px 32px rgba(255,183,197,0.3);
+.collage-item:hover {
+    transform: scale(1.04);
+    box-shadow: 0 14px 40px rgba(255,183,197,0.3);
+    z-index: 10;
 }
 
-.zubair-photo-card:hover::after { opacity: 1; }
-
-.zubair-photo-card img {
+.collage-item img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.4s ease;
+    transition: transform 0.5s ease;
 }
 
-.zubair-photo-card:hover img { transform: scale(1.08); }
-
-/* ─── Video Cards ─── */
-.zubair-video-card {
-    flex: 0 0 auto;
-    width: 280px;
-    scroll-snap-align: start;
-    border-radius: 14px;
-    overflow: hidden;
-    background: #111;
-    box-shadow: 0 3px 12px rgba(0,0,0,0.1);
-    transition: transform 0.35s ease, box-shadow 0.35s ease;
-    opacity: 0;
-    animation: zubairFadeUp 0.5s ease forwards;
-    animation-delay: calc(var(--i, 0) * 0.1s + 0.2s);
+.collage-item:hover img {
+    transform: scale(1.08);
 }
 
-.zubair-video-card:hover {
-    transform: translateY(-4px) scale(1.02);
-    box-shadow: 0 12px 32px rgba(0,0,0,0.2);
+/* Vary sizes for visual interest */
+.collage-item.wide {
+    grid-column: span 2;
 }
 
-.zubair-video-card iframe {
-    width: 100%;
-    height: 158px;
-    border: none;
-    display: block;
+.collage-item.tall {
+    grid-row: span 2;
 }
 
-.zubair-video-label {
-    padding: 10px 14px;
-    font-size: 0.72rem;
-    color: var(--text-light);
-    background: var(--white);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+@keyframes zubairFadeIn {
+    from { opacity: 0; transform: translateY(14px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* ─── Lightbox ─── */
-.zubair-lightbox {
+.zubair-lb {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.94);
+    background: rgba(0,0,0,0.95);
     z-index: 10000;
     display: flex;
     align-items: center;
@@ -888,15 +848,11 @@ body {
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.35s ease;
-    cursor: pointer;
 }
 
-.zubair-lightbox.on {
-    opacity: 1;
-    pointer-events: all;
-}
+.zubair-lb.on { opacity: 1; pointer-events: all; }
 
-.zubair-lightbox img {
+.zubair-lb img {
     max-width: 92vw;
     max-height: 88vh;
     object-fit: contain;
@@ -907,22 +863,22 @@ body {
     cursor: default;
 }
 
-.zubair-lightbox.on img { transform: scale(1); }
+.zubair-lb.on img { transform: scale(1); }
 
-.zubair-lb-close,
-.zubair-lb-prev,
-.zubair-lb-next {
+.zubair-lb-x,
+.zubair-lb-l,
+.zubair-lb-r {
     position: absolute;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.08);
     border: none;
     color: white;
     cursor: pointer;
-    transition: background 0.2s, opacity 0.2s;
+    transition: background 0.2s;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
 }
 
-.zubair-lb-close {
+.zubair-lb-x {
     top: 20px; right: 24px;
     width: 44px; height: 44px;
     border-radius: 50%;
@@ -930,41 +886,36 @@ body {
     display: flex; align-items: center; justify-content: center;
 }
 
-.zubair-lb-prev,
-.zubair-lb-next {
-    top: 50%;
-    transform: translateY(-50%);
+.zubair-lb-l,
+.zubair-lb-r {
+    top: 50%; transform: translateY(-50%);
     width: 48px; height: 48px;
     border-radius: 50%;
     font-size: 1.8rem;
     display: flex; align-items: center; justify-content: center;
 }
 
-.zubair-lb-prev { left: 20px; }
-.zubair-lb-next { right: 20px; }
+.zubair-lb-l { left: 20px; }
+.zubair-lb-r { right: 20px; }
 
-.zubair-lb-close:hover,
-.zubair-lb-prev:hover,
-.zubair-lb-next:hover {
-    background: rgba(255,255,255,0.25);
-}
-
-/* ─── Keyframes ─── */
-@keyframes zubairFadeUp {
-    from { opacity: 0; transform: translateY(18px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
+.zubair-lb-x:hover,
+.zubair-lb-l:hover,
+.zubair-lb-r:hover { background: rgba(255,255,255,0.2); }
 
 /* ─── Responsive ─── */
 @media (max-width: 768px) {
-    .zubair-photo-card { width: 140px; height: 140px; }
-    .zubair-video-card { width: 240px; }
-    .zubair-video-card iframe { height: 135px; }
-    .zubair-lb-prev, .zubair-lb-next { width: 40px; height: 40px; font-size: 1.4rem; }
+    .collage-grid {
+        grid-template-columns: repeat(3, 1fr);
+        grid-auto-rows: 130px;
+    }
+    .collage-item.wide { grid-column: span 2; }
 }
 
 @media (max-width: 480px) {
-    .zubair-photo-card { width: 120px; height: 120px; }
-    .zubair-video-card { width: 200px; }
-    .zubair-video-card iframe { height: 113px; }
+    .collage-grid {
+        grid-template-columns: repeat(2, 1fr);
+        grid-auto-rows: 120px;
+    }
+    .collage-item.wide { grid-column: span 1; }
+    .collage-item.tall { grid-row: span 1; }
 }
